@@ -22,7 +22,6 @@ import (
 	"io"
 
 	ispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/opencontainers/umoci/pkg/hardening"
 )
 
 // GetVerifiedBlob returns a VerifiedReadCloser for retrieving a blob from the
@@ -32,9 +31,5 @@ import (
 // is limited to the descriptor.Size.
 func (e Engine) GetVerifiedBlob(ctx context.Context, descriptor ispec.Descriptor) (io.ReadCloser, error) {
 	reader, err := e.GetBlob(ctx, descriptor.Digest)
-	return &hardening.VerifiedReadCloser{
-		Reader:         reader,
-		ExpectedDigest: descriptor.Digest,
-		ExpectedSize:   descriptor.Size,
-	}, err
+	return reader, err
 }

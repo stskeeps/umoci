@@ -30,7 +30,6 @@ import (
 	imeta "github.com/opencontainers/image-spec/specs-go"
 	ispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/umoci/oci/cas"
-	"github.com/opencontainers/umoci/pkg/hardening"
 	"github.com/opencontainers/umoci/pkg/system"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
@@ -208,11 +207,7 @@ func (e *dirEngine) GetBlob(ctx context.Context, digest digest.Digest) (io.ReadC
 		return nil, errors.Wrap(err, "compute blob path")
 	}
 	fh, err := os.Open(filepath.Join(e.path, path))
-	return &hardening.VerifiedReadCloser{
-		Reader:         fh,
-		ExpectedDigest: digest,
-		ExpectedSize:   int64(-1), // We don't know the expected size.
-	}, errors.Wrap(err, "open blob")
+	return fh, err
 }
 
 // StatBlob returns whether the specified blob exists in the image. Returns
