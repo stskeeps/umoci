@@ -33,7 +33,6 @@ import (
 
 	"github.com/apex/log"
 	gzip "github.com/klauspost/pgzip"
-	"github.com/opencontainers/go-digest"
 	ispec "github.com/opencontainers/image-spec/specs-go/v1"
 	rspec "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/opencontainers/umoci/oci/cas"
@@ -227,13 +226,12 @@ func UnpackRootfs(ctx context.Context, engine cas.Engine, rootfsPath string, man
 
 	// Layer extraction.
 	found := false
-	for idx, layerDescriptor := range manifest.Layers {
+	for _, layerDescriptor := range manifest.Layers {
 		if !found && opt.StartFrom.MediaType != "" && layerDescriptor.Digest.String() != opt.StartFrom.Digest.String() {
 			continue
 		}
 		found = true
 
-		layerDiffID := config.RootFS.DiffIDs[idx]
 		log.Infof("unpack layer: %s", layerDescriptor.Digest)
 
 		layerBlob, err := engineExt.FromDescriptor(ctx, layerDescriptor)
@@ -261,8 +259,7 @@ func UnpackRootfs(ctx context.Context, engine cas.Engine, rootfsPath string, man
 			}
 		}
 
-		layerDigester := digest.SHA256.Digester()
-		layer := io.TeeReader(layerRaw, layerDigester.Hash())
+		layer := layerRaw
 
 		if err := UnpackLayer(rootfsPath, layer, opt); err != nil {
 			return errors.Wrap(err, "unpack layer")
@@ -293,11 +290,6 @@ func UnpackRootfs(ctx context.Context, engine cas.Engine, rootfsPath string, man
 		}
 		if err := layerData.Close(); err != nil {
 			return errors.Wrap(err, "close layer data")
-		}
-
-		layerDigest := layerDigester.Digest()
-		if layerDigest != layerDiffID {
-			return errors.Errorf("unpack manifest: layer %s: diffid mismatch: got %s expected %s", layerDescriptor.Digest, layerDigest, layerDiffID)
 		}
 
 		if opt.AfterLayerUnpack != nil {
