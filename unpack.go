@@ -21,13 +21,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/apex/log"
 	ispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/umoci/oci/casext"
 	"github.com/opencontainers/umoci/oci/layer"
-	"github.com/opencontainers/umoci/pkg/fseval"
 	"github.com/pkg/errors"
 )
 
@@ -61,7 +59,6 @@ func Unpack(engineExt casext.Engine, fromName string, bundlePath string, unpackO
 		return errors.Wrap(fmt.Errorf("descriptor does not point to ispec.MediaTypeImageManifest: not implemented: %s", manifestBlob.Descriptor.MediaType), "invalid --image tag")
 	}
 
-	mtreeName := strings.Replace(meta.From.Descriptor().Digest.String(), ":", "_", 1)
 	log.WithFields(log.Fields{
 		"bundle": bundlePath,
 		"ref":    fromName,
@@ -86,15 +83,6 @@ func Unpack(engineExt casext.Engine, fromName string, bundlePath string, unpackO
 		return errors.Wrap(err, "create runtime bundle")
 	}
 	log.Info("... done")
-
-	fsEval := fseval.Default
-	if meta.MapOptions.Rootless {
-		fsEval = fseval.Rootless
-	}
-
-	if err := GenerateBundleManifest(mtreeName, bundlePath, fsEval); err != nil {
-		return errors.Wrap(err, "write mtree")
-	}
 
 	log.WithFields(log.Fields{
 		"version":     meta.Version,
